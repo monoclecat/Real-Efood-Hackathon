@@ -10,3 +10,4 @@ Server Parser
 - Splitwise
 - Geteilte Einkäufe
 - etc.
+### T
