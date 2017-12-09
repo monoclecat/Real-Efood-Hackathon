@@ -1,0 +1,273 @@
+
+# coding: utf-8
+
+# In[224]:
+
+
+########### Python 3.6 #############
+import http.client, urllib.request, urllib.parse, urllib.error, base64, json, re, base64
+get_ipython().system(' pip install requests')
+import requests
+from operator import itemgetter
+from copy import deepcopy
+
+
+# In[225]:
+
+
+###############################################
+#### Update or verify the following values. ###
+###############################################
+
+# Replace the subscription_key string value with your valid subscription key.
+subscription_key = '1ffc58cd61754f34abe6f8581f507885'
+
+# Replace or verify the region.
+#
+# You must use the same region in your REST API call as you used to obtain your subscription keys.
+# For example, if you obtained your subscription keys from the westus region, replace
+# "westcentralus" in the URI below with "westus".
+#
+# NOTE: Free trial subscription keys are generated in the westcentralus region, so if you are using
+# a free trial subscription key, you should not need to change this region.
+uri_base = 'westcentralus.api.cognitive.microsoft.com'
+
+headers = {
+    # Request headers.
+    'Content-Type': 'application/octet-stream',
+    'Ocp-Apim-Subscription-Key': subscription_key,
+}
+
+params = urllib.parse.urlencode({
+    # Request parameters. The language setting "unk" means automatically detect the language.
+    'language': 'unk',
+    'detectOrientation ': 'true',
+})
+
+
+# In[226]:
+
+
+# Replace the three dots below with the full file path to a JPEG image of a celebrity on your computer or network.
+image = open('1.jpg','rb').read() # Read image file in binary mode
+
+
+# In[227]:
+
+
+try:
+    # Execute the REST API call and get the response.
+    #conn = http.client.HTTPSConnection(uri_base)
+    #conn.request("POST", "/vision/v1.0/ocr?%s" % params, body, headers)
+    #response = conn.getresponse()
+
+    # NOTE: You must use the same location in your REST call as you used to obtain your subscription keys.
+    #   For example, if you obtained your subscription keys from westus, replace "westcentralus" in the
+    #   URL below with "westus".
+    response = requests.post(url = 'https://westcentralus.api.cognitive.microsoft.com/vision/v1.0/ocr',
+                             headers = headers,
+                             params = params,
+                             data = image)
+
+    parsed = response.json()
+    # 'data' contains the JSON data. The following formats the JSON data for display.
+    print("Response:")
+    print(json.dumps(parsed, sort_keys=True, indent=2))
+    conn.close()
+
+except Exception as e:
+    print('Error:')
+    print(e)
+
+####################################
+
+
+# In[244]:
+
+
+def get_elements_at_y(y, parsed):
+    try:
+        for region in parsed['regions']:
+            for box in region['lines']:
+                print(box)
+                print("--")
+    except ValueError:
+        return {}
+
+def get_y(box):
+    # box must be dict with 'boundingbox' key in top level
+    # "boundingBox": "X,Y,width,height"
+    coords_string = box['boundingBox']
+    coords = coords_string.split(',')
+    return int(coords[1])
+
+def get_x(box):
+    # box must be dict with 'boundingbox' key in top level
+    # "boundingBox": "X,Y,width,height"
+    coords_string = box['boundingBox']
+    coords = coords_string.split(',')
+    return int(coords[0])
+
+def get_height(box):
+    # box must be dict with 'boundingbox' key in top level
+    # "boundingBox": "X,Y,width,height"
+    coords_string = box['boundingBox']
+    coords = coords_string.split(',')
+    return int(coords[3])
+
+line_heights = []
+
+for region in parsed['regions']:
+    for line in region['lines']:
+        line_heights.append(get_height(line))
+line_height = line_heights[int(line_heights.__len__()/2)]
+
+receipt_lines = [] # [ [{'boundingBox': '...', 'words': [{...}]}], ...]
+# "boundingBox": "X,Y,width,height"
+try:
+    # print(parsed['regions'][0]['lines'])
+    for region in parsed['regions']:
+        for box in region['lines']:
+            if receipt_lines != []:
+                for line in receipt_lines:
+                    if get_y(box) < get_y(line[0])+line_height/2 and get_y(box) > get_y(line[0])-line_height/2:
+                        for word in box['words']:
+                            word['x-coord'] = get_x(box)
+                            line.append(word)
+                        break
+                else:
+                    append_to_receipt = []
+                    for word in box['words']:
+                            word['x-coord'] = get_x(box)
+                            append_to_receipt.append(word)
+                    receipt_lines.append(append_to_receipt)
+            else:
+                append_to_receipt = []
+                for word in box['words']:
+                        word['x-coord'] = get_x(box)
+                        append_to_receipt.append(word)
+                receipt_lines.append(append_to_receipt)
+except ValueError:
+    print("Sorting by lines failed.")
+
+x_coord_sorter_array = []
+for line in receipt_lines:
+    x_coord_sorter_array.append(sorted(line, key=itemgetter('x-coord')))
+
+receipt_lines = x_coord_sorter_array
+
+print(json.dumps(receipt_lines, sort_keys=True, indent=2))
+
+
+
+# In[245]:
+
+
+y_and_text = []
+try:
+    for line in receipt_lines:
+        y_and_text_entry = {'y-coord': int(get_y(line[0]))}
+        y_and_text_string = ""
+        for box in line:
+            if y_and_text_string != "":
+                if box['text'][0] == ',' or box['text'][0] == '.' or y_and_text_string[-2:] == ", " or y_and_text_string[-2:] == ". ":
+                    y_and_text_string = y_and_text_string[:-1]
+            y_and_text_string += box['text'] + " "
+        y_and_text_string = y_and_text_string[:-1]
+        y_and_text_entry['text'] = y_and_text_string
+        y_and_text.append(y_and_text_entry)
+except ValueError:
+    print("Failed")
+
+y_and_text = sorted(y_and_text, key=itemgetter('y-coord'))
+
+print(json.dumps(y_and_text, sort_keys=True, indent=2))
+
+
+# In[246]:
+
+
+parsed_receipt = {'timestamp': "", 'plz': "", 'city': "", 'address': "", 'products': {}}
+
+y_and_text_copy = deepcopy(y_and_text)
+
+receipt_head = []
+city_prog = re.compile("(\s|\A)(?P<plz>\d\d\d\d\d)\s(?P<city>[a-zA-Z]+)(\s|\Z|\D)")
+plz_prog = re.compile("(\s|\A)(?P<plz>\d\d\d\d\d)(\s|\Z|\D)")
+address_prog = re.compile("(\s|\A)(?P<address>[a-zA-Z]+\.+\d+)(\s|\Z|\D)")
+
+receipt_body = []
+product_prog = re.compile("(?P<name>(\S\S\S+\s*)+)\s(?P<price>\d?\d(\.|\,)\d\d)")
+real_product_amount_prog = re.compile("(?P<amount>\d+)\sx\s\d?\d(\.|\,)\d\d")
+
+receipt_foot = []
+datetime_prog = re.compile("(?P<day>\d?\d)\.(?P<month>\d?\d)\.(?P<year>\d\d)\s(?P<time>\d\d\:\d\d)")
+
+state = 1 # 1: head 2: body 3: foot
+for line in y_and_text:
+    if state == 1:
+        if product_prog.search(line['text']) is None:
+            receipt_head.append(line)
+        else:
+            state = 2
+    if state == 2:
+        if "summe" not in line['text'].lower():
+            receipt_body.append(line)
+        else:
+            state = 3
+    if state == 3:
+        receipt_foot.append(line)
+
+this_iteration = {}
+next_iteration = {}
+
+for line in receipt_head:
+    if "Tel" not in line['text']:
+        found = plz_prog.search(line['text'])
+        if found is not None:
+            parsed_receipt['plz'] = found.group('plz')
+        found = address_prog.search(line['text'])
+        if found is not None:
+            parsed_receipt['address'] = found.group('address')
+        else:
+            found = city_prog.search(line['text'])
+            if found is not None:
+                parsed_receipt['city'] = found.group('city')
+
+for line in receipt_body:
+    found = real_product_amount_prog.search(line['text'])
+    if found is not None:
+        next_iteration['amount'] = found.group('amount')
+    else:
+        found = product_prog.search(line['text'])
+        if found is not None:
+            append_to_product = {'price': found.group('price')}
+            if 'amount' in this_iteration:
+                append_to_product['amount'] = this_iteration['amount']
+            else:
+                append_to_product['amount'] = 1
+            parsed_receipt['products'][found.group('name')] = append_to_product
+
+    this_iteration = {}
+    this_iteration = deepcopy(next_iteration)
+    next_iteration = {}
+
+for line in receipt_foot:
+    found = datetime_prog.search(line['text'])
+    if found is not None:
+        receipt_year = found.group('year')
+        receipt_year = '20'+receipt_year
+
+        receipt_month = found.group('month')
+        if receipt_month.__len__() == 1:
+            receipt_month = "0"+receipt_week
+
+        receipt_day = found.group('day')
+        if receipt_day.__len__() == 1:
+            receipt_day = "0"+receipt_day
+
+        parsed_receipt['timestamp'] = receipt_year+"-"+receipt_month+"-"+receipt_day+" "+found.group('time')+":00"
+
+
+
+print(json.dumps(parsed_receipt, sort_keys=True, indent=2))
