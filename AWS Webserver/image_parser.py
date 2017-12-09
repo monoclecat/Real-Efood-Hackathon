@@ -1,4 +1,9 @@
 ########### Python 3.6 #############
+try:
+  import unzip_requirements
+except ImportError:
+  pass
+
 import http.client, urllib.request, urllib.parse, urllib.error, base64, json, re
 import requests
 from operator import itemgetter

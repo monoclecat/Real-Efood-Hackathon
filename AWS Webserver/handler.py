@@ -1,6 +1,12 @@
 import json
 import sys
 import image_parser
+import sys
+
+try:
+  import unzip_requirements
+except ImportError:
+  pass
 
 import boto3
 dynamodb = boto3.resource('dynamodb',region_name='us-east-2')
@@ -25,6 +31,7 @@ dynamodb = boto3.resource('dynamodb',region_name='us-east-2')
 #     return response['Attributes']
 
 def parseImage(event, context):
+    print(sys.path)
     data = json.loads(event['body'])
     print(data)
     encoded_image = data["image"]

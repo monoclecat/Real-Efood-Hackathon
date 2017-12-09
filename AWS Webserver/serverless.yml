@@ -76,6 +76,15 @@ functions:
           method: post
           cors: true
 
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    zip: true
+    pythonBin: C:\\Python\\Python35-32\\Python
+
+
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events
 #    Check the event documentation for details
