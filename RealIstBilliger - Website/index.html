@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+  <html>
+    <head>
+
+      <style>
+      video {
+        object-fit: fill;
+      }
+      </style>
+      <!--Import Google Icon Font-->
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+      <!--Import materialize.css-->
+      <link type="text/css" rel="stylesheet" href="css/materialize.min.css"  media="screen,projection"/>
+
+       <!--Import jQuery before materialize.js-->
+       <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+       <script type="text/javascript" src="js/materialize.min.js"></script>
+
+      <!--Let browser know website is optimized for mobile-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+      <script type="text/javascript">
+
+      //--------------------
+      // GET USER MEDIA CODE
+      //--------------------
+          navigator.getUserMedia = ( navigator.getUserMedia ||
+                             navigator.webkitGetUserMedia ||
+                             navigator.mozGetUserMedia ||
+                             navigator.msGetUserMedia);
+
+      var video;
+      var webcamStream;
+
+      function startWebcam() {
+        if (navigator.getUserMedia) {
+           navigator.getUserMedia (
+
+              // constraints
+              {
+                 video: true,
+                 audio: false
+              },
+
+              // successCallback
+              function(localMediaStream) {
+                  video = document.querySelector('video');
+                 video.src = window.URL.createObjectURL(localMediaStream);
+                 webcamStream = localMediaStream;
+              },
+
+              // errorCallback
+              function(err) {
+                 console.log("The following error occured: " + err);
+              }
+           );
+           setPart(false);
+        } else {
+           console.log("getUserMedia not supported");
+        }
+      }
+
+      function stopWebcam() {
+          webcamStream.stop();
+      }
+      //---------------------
+      // TAKE A SNAPSHOT CODE
+      //---------------------
+      var canvas, ctx;
+
+      function init() {
+        // Get the canvas and obtain a context for
+        // drawing in it
+        canvas = document.getElementById("myCanvas");
+        ctx = canvas.getContext('2d');
+        adjustSize();
+        startWebcam();
+      }
+
+      function snapshot() {
+        setPart(true);
+         // Draws current image from the video element into the canvas
+        ctx.drawImage(video, 0,0, canvas.width, canvas.height);
+        // document.getElementById("displayBase64").innerHTML = canvas.toDataURL();
+      }
+
+
+      function setPart(canv) {
+        var canvas = document.getElementById("myCanvas");
+        var vid = document.getElementById("video");
+        var par = document.getElementById("displayBase64");
+        if(canv) {
+          canvas.width  = video.videoWidth;
+          canvas.height = video.videoHeight;
+          vid.width = 0;
+          vid.height = 0;
+        } else {
+          canvas.width  = 0;
+          canvas.height = 0;
+          vid.width = video.videoWidth;
+          vid.height = video.videoHeight;
+        }
+
+      }
+
+      function adjustSize() {
+        var h = document.getElementById("video").style.width;
+        document.getElementById("card").style.width = h;
+        console.log("WHY YOU NO WORK");
+        console.log(h);
+      }
+      </script>
+    </head>
+
+    <body onload="init();">
+      <div class="container">
+        <div class="row">
+          <div class="col s12">
+            <div id="card" class="card grey lighten-4">
+              <div class="card-content white-text">
+                <div class="center-align">
+                  <video width="100%" height="height" class="responsive-video" onclick="snapshot(this);" id="video" controls autoplay></video>
+                  <canvas width="100%" height="height" id="myCanvas" width="0" height="0"></canvas>
+                  </div>
+              </div>
+            </div>
+          </div>
+      </div>
+    </div>
+    </body>
+  </html>
