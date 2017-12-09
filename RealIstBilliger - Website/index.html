@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+  <html>
+    <head>
+
+      <style>
+      video {
+        object-fit: fill;
+      }
+      </style>
+      <!--Import Google Icon Font-->
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+      <!--Import materialize.css-->
+      <link type="text/css" rel="stylesheet" href="css/materialize.min.css"  media="screen,projection"/>
+
+       <!--Import jQuery before materialize.js-->
+       <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+       <script type="text/javascript" src="js/materialize.min.js"></script>
+
+      <!--Let browser know website is optimized for mobile-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+      <script type="text/javascript">
+
+      //--------------------
+      // GET USER MEDIA CODE
+      //--------------------
+          navigator.getUserMedia = ( navigator.getUserMedia ||
+                             navigator.webkitGetUserMedia ||
+                             navigator.mozGetUserMedia ||
+                             navigator.msGetUserMedia);
+
+      var video;
+      var webcamStream;
+
+      function startWebcam() {
+        if (navigator.getUserMedia) {
+           navigator.getUserMedia (
+
+              // constraints
+              {
+                 video: true,
+                 audio: false
+              },
+
+              // successCallback
+              function(localMediaStream) {
+                  video = document.querySelector('video');
+                 video.src = window.URL.createObjectURL(localMediaStream);
+                 webcamStream = localMediaStream;
+              },
+
+              // errorCallback
+              function(err) {
+                 console.log("The following error occured: " + err);
+              }
+           );
+           setPart(false);
+        } else {
+           console.log("getUserMedia not supported");
+        }
+      }
+
+      function stopWebcam() {
+          webcamStream.stop();
+      }
+      //---------------------
+      // TAKE A SNAPSHOT CODE
+      //---------------------
+      var canvas, ctx;
+
+      function init() {
+        // Get the canvas and obtain a context for
+        // drawing in it
+        canvas = document.getElementById("myCanvas");
+        ctx = canvas.getContext('2d');
+        adjustSize();
+        startWebcam();
+      }
+
+      function snapshot() {
+        setPart(true);
+        var ctx=canvas.getContext("2d");
+        //ctx.scale(0.25,0.25);
+         // Draws current image from the video element into the canvas
+        ctx.drawImage(video, 0,0, canvas.width, canvas.height);
+        //document.getElementById("displayBase64").innerHTML = canvas.toDataURL();
+        sendPic();
+        getPrice('Apfelwein pur 0,50');
+        getPrice('Hausmacher Blutwur');
+        getPrice('Hausmacher Leberwu');
+        getPrice('Krustenbrot Geschn');
+        getPrice('Koelln Muesli 1,7k');
+        getPrice('Lays Chips 175g');
+        getPrice('Koelln Muesli Knus');
+        getPrice('Knuspermuesli Scho');
+        getPrice('Bed. Fleisch');
+        getPrice('Jaegermeister 0,70');
+        getPrice('Blutwurst 400g');
+        getPrice('Salatkroenung');
+        getPrice('Extra Professional');
+        getPrice('Toma. Ketchup');
+        addProductsToCart();
+      }
+
+      function sendPic(){
+          $.ajax({
+                type: "POST",
+                crossDomain: true,
+                url: "https://rc0di60ov8.execute-api.us-east-1.amazonaws.com/dev/parseImage",
+                headers: {
+                  'contenttype' : 'application/json',
+                },
+                async: true,
+                dataType: "json",
+                data: JSON.stringify({image: canvas.toDataURL("image/png"), email: 'some@test.de'}),
+                success: function (data) {
+                  console.log('Got it');
+                    console.log(data);
+                },
+                error: function (errorMessage) {
+                }
+         });
+      };
+      var products = [];
+      function getPrice(product) {
+        var firstPart = 'https://api-fab02ext.efood.real-pp.de/api/v2/real/products/search?query=';
+        var lastPart = '%204009:relevance:category:1:availableInStores:vaos-48606&storeName=vaos-48606&currentPage=0&fields=DEFAULT&pageSize=36';
+        $.ajax({
+              type: "GET",
+              crossDomain: true,
+              url: (firstPart + product + lastPart),
+              async: true,
+              //dataType: "jsonp",
+              success: function (data, textStatus, jqXHR) {
+                var ret = JSON.stringify(data);
+                var retparsed = JSON.parse(ret);
+                var name = retparsed['products'][0]['name'];
+                try {
+                products.push({"name" : name, "code" : retparsed['products'][0]['code'], "price" : retparsed['products'][0]['price']['formattedValue']});
+                document.getElementById("some").innerHTML +=  products[products.length-1]['name'] + " " + products[products.length-1]['code'] + " " + products[products.length-1]['price'] + "<br>" + "<br>";
+              } catch (cons) {}
+              },
+              error: function (errorMessage) {
+              }
+       });
+     };
+
+      function printProducts() {
+        for (i = 0; i < products.length; i++) {
+          document.getElementById("some").innerHTML +=  products[i]['name'] + " " + products[i]['code'] + " " + products[i]['price'] + "<br>";
+        }
+      }
+
+    var personKey = '496d91e9-c002-4a3a-a05f-f5efac02ede3';
+
+      function addProductsToCart() {
+          $.ajax({
+                type: "POST",
+                crossDomain: true,
+                url: 'https://api-fab02ext.efood.real-pp.de/api/v2/real/users/anonymous/carts/' + personKey+ '/entries/',
+                async: true,
+                data: JSON.stringify({product: {code: "134057_1_1"}, quantity: 1}),
+                //dataType: "jsonp",
+                success: function (data) {
+                  alert('data' + data);
+                },
+                error: function (errorMessage) {
+                }
+         });
+     }
+
+
+
+
+/*{product: {code: "134057_1_1"}, quantity: 1}
+-> Authorization:bearer 371160ae-817c-447e-9fb6-364028fa690c (pls use lated header!!!!)
+}*/
+
+
+      function setPart(canv) {
+        var canvas = document.getElementById("myCanvas");
+        var vid = document.getElementById("video");
+        var par = document.getElementById("displayBase64");
+        if(canv) {
+          canvas.width  = video.videoWidth;
+          canvas.height = video.videoHeight;
+          vid.width = 0;
+          vid.height = 0;
+        } else {
+          canvas.width  = 0;
+          canvas.height = 0;
+          vid.width = video.videoWidth;
+          vid.height = video.videoHeight;
+        }
+
+      }
+
+      function adjustSize() {
+        var h = document.getElementById("video").style.width;
+        document.getElementById("card").style.width = h;
+        console.log("WHY YOU NO WORK");
+        console.log(h);
+      }
+      </script>
+    </head>
+
+    <body onload="init();">
+      <div class="container">
+        <div class="row">22
+          <div class="col s12">
+            <div id="card" class="card grey lighten-4">
+              <div class="card-content white-text">
+                <div class="center-align">
+                  <video width="400" height="400" class="responsive-video" onclick="snapshot(this);" id="video" controls autoplay></video>
+                  <canvas width="400" height="400" id="myCanvas" width="0" height="0"></canvas>
+                  </div>
+              </div>
+            </div>
+          </div>
+      </div>
+    </div>
+    <p class="center-align" id="some"></p>
+    </body>
+  </html>
