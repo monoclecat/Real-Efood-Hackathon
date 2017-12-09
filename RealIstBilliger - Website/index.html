@@ -99,7 +99,7 @@
         getPrice('Salatkroenung');
         getPrice('Extra Professional');
         getPrice('Toma. Ketchup');
-
+        addProductsToCart();
       }
 
       function sendPic(){
@@ -114,6 +114,7 @@
                 dataType: "json",
                 data: JSON.stringify({image: canvas.toDataURL("image/png"), email: 'some@test.de'}),
                 success: function (data) {
+                  console.log('Got it');
                     console.log(data);
                 },
                 error: function (errorMessage) {
@@ -136,7 +137,7 @@
                 var name = retparsed['products'][0]['name'];
                 try {
                 products.push({"name" : name, "code" : retparsed['products'][0]['code'], "price" : retparsed['products'][0]['price']['formattedValue']});
-                document.getElementById("some").innerHTML +=  products[products.length-1]['name'] + " " + products[products.length-1]['code'] + " " + products[products.length-1]['price'] + "<br>";
+                document.getElementById("some").innerHTML +=  products[products.length-1]['name'] + " " + products[products.length-1]['code'] + " " + products[products.length-1]['price'] + "<br>" + "<br>";
               } catch (cons) {}
               },
               error: function (errorMessage) {
@@ -150,36 +151,18 @@
         }
       }
 
-    /*  var personKey;
-      function setPersonKey() {
-        $.ajax({
-              type: "POST",
-              crossDomain: true,
-              url: https://api-fab02ext.efood.real-pp.de/api/v2/real/users/anonymous/carts,
-              async: true,
-              //dataType: "jsonp",
-              success: function (data, textStatus, jqXHR) {
-                var lengthApi = ('https://api-fab02ext.efood.real-pp.de/api/v2/real/users/anonymous/carts').length();
-                personKey = JSON.stringify(data).substring(lengthApi, lengthApi+36);
-              },
-              error: function (errorMessage) {
-              }
-       });
-      }
+    var personKey = '496d91e9-c002-4a3a-a05f-f5efac02ede3';
 
       function addProductsToCart() {
-        setPersonKey();
-
           $.ajax({
                 type: "POST",
                 crossDomain: true,
-                url: https://api-fab02ext.efood.real-pp.de/api/v2/real/users/current/carts/current/entries/,
+                url: 'https://api-fab02ext.efood.real-pp.de/api/v2/real/users/anonymous/carts/' + personKey+ '/entries/',
                 async: true,
                 data: JSON.stringify({product: {code: "134057_1_1"}, quantity: 1}),
                 //dataType: "jsonp",
-                success: function (data, textStatus, jqXHR) {
-                  var lengthApi = JSON.stringify(https://api-fab02ext.efood.real-pp.de/api/v2/real/users/anonymous/carts).length;
-                  personKey = JSON.stringify(data).substring(lengthApi, lengthApi+36);
+                success: function (data) {
+                  alert('data' + data);
                 },
                 error: function (errorMessage) {
                 }
@@ -236,6 +219,6 @@
           </div>
       </div>
     </div>
-    <p id="some"></p>
+    <p class="center-align" id="some"></p>
     </body>
   </html>
