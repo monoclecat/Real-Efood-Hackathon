@@ -152,8 +152,9 @@ def parse_receipt(base64_data):
 
     # In[22]:
 
+    parsed_receipt = {'DateTime': "", 'Position': "", 'TotalPrice': 0, 'Items': {}}
 
-    parsed_receipt = {'timestamp': "", 'plz': "", 'city': "", 'address': "", 'products': {}}
+    y_and_text_copy = deepcopy(y_and_text)
 
     receipt_head = []
     city_prog = re.compile("(\s|\A)(?P<plz>\d\d\d\d\d)\s(?P<city>[a-zA-Z]+)(\s|\Z|\D)")
@@ -185,32 +186,46 @@ def parse_receipt(base64_data):
     this_iteration = {}
     next_iteration = {}
 
+    receipt_address = ["", "", ""]  # [Address,PLZ,City]
     for line in receipt_head:
         if "Tel" not in line['text']:
             found = plz_prog.search(line['text'])
             if found is not None:
-                parsed_receipt['plz'] = found.group('plz')
+                receipt_address[1] = found.group('plz')
             found = address_prog.search(line['text'])
             if found is not None:
-                parsed_receipt['address'] = found.group('address')
+                receipt_address[0] = found.group('address')
             else:
                 found = city_prog.search(line['text'])
                 if found is not None:
-                    parsed_receipt['city'] = found.group('city')
+                    receipt_address[2] = found.group('city')
+    parsed_receipt['Position'] = " ".join(receipt_address)
 
     for line in receipt_body:
         found = real_product_amount_prog.search(line['text'])
         if found is not None:
-            next_iteration['amount'] = found.group('amount')
+            next_iteration['Amount'] = found.group('amount')
         else:
             found = product_prog.search(line['text'])
             if found is not None:
-                append_to_product = {'price': found.group('price')}
-                if 'amount' in this_iteration:
-                    append_to_product['amount'] = this_iteration['amount']
+                product_price = int(re.sub('[,\.]', '', found.group('price')))
+                parsed_receipt['TotalPrice'] += product_price
+                if found.group('name') not in parsed_receipt['Items']:
+                    append_to_product = {'Price': product_price}
+                    if 'Amount' in this_iteration:
+                        append_to_product['Amount'] = this_iteration['Amount']
+                    else:
+                        append_to_product['Amount'] = 1
+                    parsed_receipt['Items'][found.group('name')] = append_to_product
                 else:
-                    append_to_product['amount'] = 1
-                parsed_receipt['products'][found.group('name')] = append_to_product
+                    amount_now = int(parsed_receipt['Items'][found.group('name')]['Amount'])
+                    if 'Amount' in this_iteration:
+                        amount_now += int(this_iteration['Amount'])
+                    else:
+                        amount_now += 1
+                    parsed_receipt['Items'][found.group('name')]['Amount'] = str(amount_now)
+                    parsed_receipt['Items'][found.group('name')]['Price'] = \
+                        parsed_receipt['Items'][found.group('name')]['Price'] + product_price
 
         this_iteration = {}
         this_iteration = deepcopy(next_iteration)
@@ -230,7 +245,7 @@ def parse_receipt(base64_data):
             if receipt_day.__len__() == 1:
                 receipt_day = "0" + receipt_day
 
-            parsed_receipt['timestamp'] = receipt_year + "-" + receipt_month + "-" + receipt_day + " " + found.group(
+            parsed_receipt['DateTime'] = receipt_year + "-" + receipt_month + "-" + receipt_day + " " + found.group(
                 'time') + ":00"
 
     # print(json.dumps(parsed_receipt, sort_keys=True, indent=2))
