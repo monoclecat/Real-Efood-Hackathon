@@ -50,7 +50,7 @@ def parse_receipt(base64_data):
 
         parsed = response.json()
         print("Response:")
-        print(json.dumps(parsed, sort_keys=True, indent=2))
+        # print(json.dumps(parsed, sort_keys=True, indent=2))
 
     except Exception as e:
         print('Error:')
@@ -65,7 +65,7 @@ def parse_receipt(base64_data):
         try:
             for region in parsed['regions']:
                 for box in region['lines']:
-                    print(box)
+                    #print(box)
                     print("--")
         except ValueError:
             return {'ResponseCode': 500, 'Result': {'Errormessage': "Getting elements at a specific y value caused a ValueError."}}
@@ -98,6 +98,9 @@ def parse_receipt(base64_data):
                 line_heights.append(get_height(line))
         line_height = line_heights[int(line_heights.__len__() / 2)]
     except ValueError:
+        print("Getting median line height failed.")
+        return {'ResponseCode': 500, 'Result': {'Errormessage': "Getting median line height caused an error."}}
+    except IndexError:
         print("Getting median line height failed.")
         return {'ResponseCode': 500, 'Result': {'Errormessage': "Getting median line height caused an error."}}
 
@@ -135,7 +138,7 @@ def parse_receipt(base64_data):
 
     receipt_lines = x_coord_sorter_array
 
-    print(json.dumps(receipt_lines, sort_keys=True, indent=2))
+    # print(json.dumps(receipt_lines, sort_keys=True, indent=2))
 
     # In[18]:
 
@@ -159,7 +162,7 @@ def parse_receipt(base64_data):
 
     y_and_text = sorted(y_and_text, key=itemgetter('y-coord'))
 
-    print(json.dumps(y_and_text, sort_keys=True, indent=2))
+    # print(json.dumps(y_and_text, sort_keys=True, indent=2))
 
     # In[22]:
 

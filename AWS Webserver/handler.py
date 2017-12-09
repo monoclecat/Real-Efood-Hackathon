@@ -31,23 +31,22 @@ dynamodb = boto3.resource('dynamodb',region_name='us-east-2')
 #     return response['Attributes']
 
 def parseImage(event, context):
-    print(sys.path)
     data = json.loads(event['body'])
-    print(data)
     encoded_image = data["image"]
     hashed_email = data["email"]
 
     # parse image
+    print("Start Image Recognition")
     purchase = image_parser.parse_receipt(base64_data=encoded_image)
-    purchase["image"] = encoded_image
-    purchase["email"] = hashed_email
-    print(purchase)
+    print("Finsished Recognition with response: {}".format(json.dumps(purchase)))
 
     response = {
-        "statusCode": 200,
-        "body": json.dumps(purchase)
+        "statusCode": purchase["ResponseCode"],
+        "body": json.dumps(purchase["Result"]),
+        "headers": {
+            "Access-Control-Allow-Origin" : "*"
+        },
     }
-    print(purchase)
 
     return response
 
