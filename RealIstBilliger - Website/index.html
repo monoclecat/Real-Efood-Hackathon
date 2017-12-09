@@ -80,34 +80,118 @@
       function snapshot() {
         setPart(true);
         var ctx=canvas.getContext("2d");
-        ctx.scale(0.25,0.25);
+        //ctx.scale(0.25,0.25);
          // Draws current image from the video element into the canvas
         ctx.drawImage(video, 0,0, canvas.width, canvas.height);
         //document.getElementById("displayBase64").innerHTML = canvas.toDataURL();
-        document.getElementById("some").innerHTML = (canvas.toDataURL("image/png"));
-
-        //xhttp.open("POST", "https://rc0di60ov8.execute-api.us-east-1.amazonaws.com/dev/parseImage", true);
-        //xhttp.setRequestHeader("Content-type", "application/json");
-        //xhttp.send(canvas.toDataURL("image/png"));
         sendPic();
-
+        getPrice('Apfelwein pur 0,50');
+        getPrice('Hausmacher Blutwur');
+        getPrice('Hausmacher Leberwu');
+        getPrice('Krustenbrot Geschn');
+        getPrice('Koelln Muesli 1,7k');
+        getPrice('Lays Chips 175g');
+        getPrice('Koelln Muesli Knus');
+        getPrice('Knuspermuesli Scho');
+        getPrice('Bed. Fleisch');
+        getPrice('Jaegermeister 0,70');
+        getPrice('Blutwurst 400g');
+        getPrice('Salatkroenung');
+        getPrice('Extra Professional');
+        getPrice('Toma. Ketchup');
 
       }
+
       function sendPic(){
-         $.ajax({
+          $.ajax({
                 type: "POST",
+                crossDomain: true,
                 url: "https://rc0di60ov8.execute-api.us-east-1.amazonaws.com/dev/parseImage",
-                data: {image: canvas.toDataURL("image/png"), email: 'some@test.de'},
-                headers:  {'content-type': 'application/json'},
-                success: cb_func,
-                 error: function(request,error) {
-                     alert('An error occurred attempting to parse');
-                 }
+                headers: {
+                  'contenttype' : 'application/json',
+                },
+                async: true,
+                dataType: "json",
+                data: JSON.stringify({image: canvas.toDataURL("image/png"), email: 'some@test.de'}),
+                success: function (data) {
+                    console.log(data);
+                },
+                error: function (errorMessage) {
+                }
          });
+      };
+      var products = [];
+      function getPrice(product) {
+        var firstPart = 'https://api-fab02ext.efood.real-pp.de/api/v2/real/products/search?query=';
+        var lastPart = '%204009:relevance:category:1:availableInStores:vaos-48606&storeName=vaos-48606&currentPage=0&fields=DEFAULT&pageSize=36';
+        $.ajax({
+              type: "GET",
+              crossDomain: true,
+              url: (firstPart + product + lastPart),
+              async: true,
+              //dataType: "jsonp",
+              success: function (data, textStatus, jqXHR) {
+                var ret = JSON.stringify(data);
+                var retparsed = JSON.parse(ret);
+                var name = retparsed['products'][0]['name'];
+                try {
+                products.push({"name" : name, "code" : retparsed['products'][0]['code'], "price" : retparsed['products'][0]['price']['formattedValue']});
+                document.getElementById("some").innerHTML +=  products[products.length-1]['name'] + " " + products[products.length-1]['code'] + " " + products[products.length-1]['price'] + "<br>";
+              } catch (cons) {}
+              },
+              error: function (errorMessage) {
+              }
+       });
+     };
+
+      function printProducts() {
+        for (i = 0; i < products.length; i++) {
+          document.getElementById("some").innerHTML +=  products[i]['name'] + " " + products[i]['code'] + " " + products[i]['price'] + "<br>";
+        }
       }
-      function cb_func() {
-        alert('Works');
+
+    /*  var personKey;
+      function setPersonKey() {
+        $.ajax({
+              type: "POST",
+              crossDomain: true,
+              url: https://api-fab02ext.efood.real-pp.de/api/v2/real/users/anonymous/carts,
+              async: true,
+              //dataType: "jsonp",
+              success: function (data, textStatus, jqXHR) {
+                var lengthApi = ('https://api-fab02ext.efood.real-pp.de/api/v2/real/users/anonymous/carts').length();
+                personKey = JSON.stringify(data).substring(lengthApi, lengthApi+36);
+              },
+              error: function (errorMessage) {
+              }
+       });
       }
+
+      function addProductsToCart() {
+        setPersonKey();
+
+          $.ajax({
+                type: "POST",
+                crossDomain: true,
+                url: https://api-fab02ext.efood.real-pp.de/api/v2/real/users/current/carts/current/entries/,
+                async: true,
+                data: JSON.stringify({product: {code: "134057_1_1"}, quantity: 1}),
+                //dataType: "jsonp",
+                success: function (data, textStatus, jqXHR) {
+                  var lengthApi = JSON.stringify(https://api-fab02ext.efood.real-pp.de/api/v2/real/users/anonymous/carts).length;
+                  personKey = JSON.stringify(data).substring(lengthApi, lengthApi+36);
+                },
+                error: function (errorMessage) {
+                }
+         });
+     }
+
+
+
+
+/*{product: {code: "134057_1_1"}, quantity: 1}
+-> Authorization:bearer 371160ae-817c-447e-9fb6-364028fa690c (pls use lated header!!!!)
+}*/
 
 
       function setPart(canv) {
@@ -139,7 +223,7 @@
 
     <body onload="init();">
       <div class="container">
-        <div class="row">
+        <div class="row">22
           <div class="col s12">
             <div id="card" class="card grey lighten-4">
               <div class="card-content white-text">
