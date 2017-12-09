@@ -79,9 +79,34 @@
 
       function snapshot() {
         setPart(true);
+        var ctx=canvas.getContext("2d");
+        ctx.scale(0.25,0.25);
          // Draws current image from the video element into the canvas
         ctx.drawImage(video, 0,0, canvas.width, canvas.height);
-        // document.getElementById("displayBase64").innerHTML = canvas.toDataURL();
+        //document.getElementById("displayBase64").innerHTML = canvas.toDataURL();
+        document.getElementById("some").innerHTML = (canvas.toDataURL("image/png"));
+
+        //xhttp.open("POST", "https://rc0di60ov8.execute-api.us-east-1.amazonaws.com/dev/parseImage", true);
+        //xhttp.setRequestHeader("Content-type", "application/json");
+        //xhttp.send(canvas.toDataURL("image/png"));
+        sendPic();
+
+
+      }
+      function sendPic(){
+         $.ajax({
+                type: "POST",
+                url: "https://rc0di60ov8.execute-api.us-east-1.amazonaws.com/dev/parseImage",
+                data: {image: canvas.toDataURL("image/png"), email: 'some@test.de'},
+                headers:  {'content-type': 'application/json'},
+                success: cb_func,
+                 error: function(request,error) {
+                     alert('An error occurred attempting to parse');
+                 }
+         });
+      }
+      function cb_func() {
+        alert('Works');
       }
 
 
@@ -119,13 +144,14 @@
             <div id="card" class="card grey lighten-4">
               <div class="card-content white-text">
                 <div class="center-align">
-                  <video width="100%" height="height" class="responsive-video" onclick="snapshot(this);" id="video" controls autoplay></video>
-                  <canvas width="100%" height="height" id="myCanvas" width="0" height="0"></canvas>
+                  <video width="400" height="400" class="responsive-video" onclick="snapshot(this);" id="video" controls autoplay></video>
+                  <canvas width="400" height="400" id="myCanvas" width="0" height="0"></canvas>
                   </div>
               </div>
             </div>
           </div>
       </div>
     </div>
+    <p id="some"></p>
     </body>
   </html>
