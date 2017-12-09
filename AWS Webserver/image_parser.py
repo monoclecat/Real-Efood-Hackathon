@@ -55,7 +55,11 @@ def parse_receipt(base64_data):
     except Exception as e:
         print('Error:')
         print(e)
+        return {'ResponseCode': 500, 'Result': {'Errormessage': "Communication with API server caused an error."}}
 
+    if parsed['regions'] == []:
+        # Recognition failed
+        return {'ResponseCode': 500, 'Result': {'Errormessage': "Image recognition API failed to see text."}}
 
     def get_elements_at_y(y, parsed):
         try:
@@ -64,7 +68,7 @@ def parse_receipt(base64_data):
                     print(box)
                     print("--")
         except ValueError:
-            return {}
+            return {'ResponseCode': 500, 'Result': {'Errormessage': "Getting elements at a specific y value caused a ValueError."}}
 
     def get_y(box):
         # box must be dict with 'boundingbox' key in top level
@@ -94,7 +98,8 @@ def parse_receipt(base64_data):
                 line_heights.append(get_height(line))
         line_height = line_heights[int(line_heights.__len__() / 2)]
     except ValueError:
-        print("Sorting by lines failed.")
+        print("Getting median line height failed.")
+        return {'ResponseCode': 500, 'Result': {'Errormessage': "Getting median line height caused an error."}}
 
     receipt_lines = []  # [ [{'boundingBox': '...', 'words': [{...}]}], ...]
     # "boundingBox": "X,Y,width,height"
@@ -122,6 +127,7 @@ def parse_receipt(base64_data):
                     receipt_lines.append(append_to_receipt)
     except ValueError:
         print("Sorting by lines failed.")
+        return {'ResponseCode': 500, 'Result': {'Errormessage': "Sorting lines caused an error."}}
 
     x_coord_sorter_array = []
     for line in receipt_lines:
@@ -149,7 +155,7 @@ def parse_receipt(base64_data):
             y_and_text_entry['text'] = y_and_text_string
             y_and_text.append(y_and_text_entry)
     except ValueError:
-        print("Failed")
+        return {'ResponseCode': 500, 'Result': {'Errormessage': "Joining line strings failed."}}
 
     y_and_text = sorted(y_and_text, key=itemgetter('y-coord'))
 
@@ -254,5 +260,5 @@ def parse_receipt(base64_data):
                 'time') + ":00"
 
     # print(json.dumps(parsed_receipt, sort_keys=True, indent=2))
-    return parsed_receipt
+    return {'ResponseCode': 200, 'Result': parsed_receipt}
 
